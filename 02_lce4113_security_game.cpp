@@ -7,39 +7,48 @@ int main() {
     cin.tie(nullptr);
 
     int T;
-    cin >> T;
-    const uint32_t M = (1u << 30) - 1;
+    if (!(cin >> T)) return 0;
+
+    const uint32_t LIMIT = (1u << 30);
     mt19937 rng((uint32_t)chrono::steady_clock::now().time_since_epoch().count());
 
     while (T--) {
-        uint32_t x = 1, o;
-        cout << x << endl;
-        cin >> o;
-        if (o == 0) {
-            uint32_t m0 = 0, m1 = 1, r;
-            cout << m0 << ' ' << m1 << endl;
-            cin >> r;
-            cout << ((r & 1u) ? 1 : 0) << endl;
-        } else if (o != 1) {
-            int bit = __builtin_ctz(o & ~1u);
-            uint32_t m0 = 0, m1 = (1u << bit), r;
-            cout << m0 << ' ' << m1 << endl;
-            cin >> r;
-            cout << ((((r >> bit) & 1u) == 0) ? 1 : 0) << endl;
-        } else {
-            uint32_t m0 = 0;
-            uint32_t m1 = (rng() & M) | 1u; // random odd value
-            uint32_t r;
-            cout << m0 << ' ' << m1 << endl;
-            cin >> r;
+        vector<int> bits(30);
+        iota(bits.begin(), bits.end(), 0);
+        shuffle(bits.begin(), bits.end(), rng);
 
-            int ans;
-            if (r == 0) ans = 0;
-            else if (r == m1) ans = 1;
-            else if ((r & 1u) == 0) ans = 1;
-            else ans = 0;
-            cout << ans << endl;
-        }
+        // A balanced mask makes the two possible operator explanations
+        // similarly unlikely when the first response equals x.
+        uint32_t x = 0;
+        for (int i = 0; i < 15; ++i) x |= (1u << bits[i]);
+
+        uint32_t o;
+        cout << x << endl;
+        if (!(cin >> o) || o == UINT32_MAX) return 0;
+
+        uint32_t m0 = rng() & (LIMIT - 1);
+        uint32_t m1 = rng() & (LIMIT - 1);
+        while (m1 == m0) m1 = rng() & (LIMIT - 1);
+
+        cout << m0 << ' ' << m1 << endl;
+        uint32_t r;
+        if (!(cin >> r) || r == UINT32_MAX) return 0;
+
+        uint32_t v0 = r ^ m0;
+        uint32_t v1 = r ^ m1;
+
+        auto possible = [&](uint32_t v) {
+            return ((v & x) == o) || ((v | x) == o);
+        };
+
+        bool ok0 = possible(v0);
+        bool ok1 = possible(v1);
+
+        int answer;
+        if (ok0 != ok1) answer = ok1 ? 1 : 0;
+        else answer = (rng() & 1u); // randomized tie-break for indistinguishable candidates
+
+        cout << answer << endl;
     }
     return 0;
 }
